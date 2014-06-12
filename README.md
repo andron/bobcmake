@@ -93,8 +93,8 @@ Below is contents of `CMakeLists.txt` under some project subdirectory for buildi
 
       _LIBS
         libexample
-        gtest
-        gtest_main
+        libgtest
+        libgtest_main
 
       _QT_MODULES
         Test
