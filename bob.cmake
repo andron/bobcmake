@@ -302,7 +302,7 @@ function(bob_add_target target)
   endforeach()
 
   # Add compilation flags.
-  list(INSERT target_cxx_flags 0 "-pedantic" "-Wall" "-Wextra" "-Wno-long-long")
+  list(INSERT target_cxx_flags 0 "-std=c++11" "-pedantic" "-Wall" "-Wextra" "-Wno-long-long")
 
   # Set compilation flags for target.
   foreach (compile_flag ${target_cxx_flags})
@@ -338,14 +338,9 @@ function(bob_add)
         endforeach()
       endif()
 
-      set(tag)
-      if (arg STREQUAL "_CXX11")
-        bob_targets_variable_append("_CXX_FLAGS" "-std=c++11" ${targets})
-      else()
-        set(tag ${arg})
-        if (tag MATCHES "^_TARGETS?$")
-          set(targets)
-        endif()
+      set(tag ${arg})
+      if (tag MATCHES "^_TARGETS?$")
+        set(targets)
       endif()
     elseif (tag)
       if (tag MATCHES "^_TARGETS?$")
