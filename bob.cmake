@@ -299,9 +299,6 @@ function(bob_add_target target)
       endif()
     endforeach()
 
-    # Add compilation flags.
-    list(INSERT target_cxx_flags 0 "-std=c++11" "-pedantic" "-Wall" "-Wextra" "-Wno-long-long")
-
     # Set compilation flags for target.
     foreach (compile_flag ${target_cxx_flags})
       set_property(TARGET ${target} APPEND_STRING PROPERTY COMPILE_FLAGS "${compile_flag} ")
@@ -382,6 +379,10 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 # Run moc utility on any file containing Q_OBJECT or #include "<FILE>.moc"
 # FIXME: This doesn't work for headers in "include/" or headers without cpp file.
 #set(CMAKE_AUTOMOC ON)
+
+# Set default compilation flags.
+set(CMAKE_C_FLAGS              "-pedantic -Wall -Wextra -Wno-long-long ${CMAKE_C_FLAGS}")
+set(CMAKE_CXX_FLAGS "-std=c++11 -pedantic -Wall -Wextra -Wno-long-long ${CMAKE_CXX_FLAGS}")
 
 # custom build types
 bob_append(bob_build_types DEBUG RELEASE RELWITHDEBINFO MINSIZEREL)
