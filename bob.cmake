@@ -111,7 +111,12 @@ function(bob_add_library_or_executable target target_version)
     if (ARGN)
       # Create target for shared library.
       add_library(${target} SHARED ${ARGN} ${headers})
-      install(TARGETS ${target} DESTINATION "lib")
+      # The plugins are now in tacsiextensions called libFoo. Need another check to see if it was a plugin.
+      if (target MATCHES "_plugin$")
+        install(TARGETS ${target} DESTINATION "share/tacsi/plugins")
+      else()
+        install(TARGETS ${target} DESTINATION "lib64")
+      endif()
     else()
       # Create target for header-only library.
       # CMake doesn't support header-only targets yet. This creates dummy static library which
