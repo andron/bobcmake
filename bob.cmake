@@ -166,6 +166,39 @@ macro(bob_add_mocced_sources target target_qt target_sources_var_name)
   endforeach()
 endmacro()
 
+# Generate source files (*.pb.cc and *.pb.hh) from specified protobuf files (*.proto).
+#
+# Requires protoc utility which is part of Google Protocol Buffers package.
+#
+# The target should be linked with protobuf library -- e.g. by specifying:
+#
+#   bob_add(
+#   # ...
+#   _PROTOBUF proto/*.proto
+#   _LIBS_AT PROTOBUF_HOME protobuf
+#   # ...
+#   )
+#
+# in build file of target.
+macro(bob_add_protobuf target_protobuf_outputs_var_name)
+  foreach (protobuf ${ARGN})
+    string(REGEX REPLACE "^.*/|\\.proto$" "" protobuf_output_basename ${protobuf})
+    set(protobuf_output ${CMAKE_CURRENT_BINARY_DIR}/proto/${protobuf_output_basename}.pb.cc)
+
+    add_custom_command(
+      OUTPUT ${protobuf_output}
+      COMMAND "protoc"
+        --cpp_out=${CMAKE_CURRENT_BINARY_DIR}
+        --proto_path=${CMAKE_CURRENT_LIST_DIR}
+        ${protobuf}
+      DEPENDS ${protobuf}
+      WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
+    )
+
+    list(APPEND ${target_protobuf_outputs_var_name} ${protobuf_output})
+  endforeach()
+endmacro()
+
 # Create new target to build.
 function(bob_add_target target)
   # mytarget_NAME - name of module
@@ -197,6 +230,8 @@ function(bob_add_target target)
   bob_get(target_compile ${target}_COMPILE)
   # mytarget_USES - non-compile time module dependencies
   bob_get(target_uses ${target}_USES)
+  # mytarget_PROTOBUF - protobuf source files
+  bob_get(target_protobuf ${target}_PROTOBUF)
 
   # Header-only library can leave out sources otherwise build fails.
   if (NOT target_sources)
@@ -258,11 +293,15 @@ function(bob_add_target target)
     endif()
   endforeach()
 
+  # Compile protobuf files.
+  bob_add_protobuf(target_protobuf_outputs ${target_protobuf})
+
   list(APPEND sources
     ${target_compile}
     ${target_sources}
     ${target_forms_headers}
     ${target_resources_rcc}
+    ${target_protobuf_outputs}
     )
 
   # Create executable, shared library or header-only library.
