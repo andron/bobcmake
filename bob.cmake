@@ -426,7 +426,7 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 #set(CMAKE_AUTOMOC ON)
 
 # Set default compilation flags.
-set(CMAKE_C_FLAGS              "-pedantic -Wall -Wextra -Wno-long-long ${CMAKE_C_FLAGS}")
+set(CMAKE_C_FLAGS   "-std=c99 -pedantic -Wall -Wextra -Wno-long-long ${CMAKE_C_FLAGS}")
 set(CMAKE_CXX_FLAGS "-std=c++11 -pedantic -Wall -Wextra -Wno-long-long ${CMAKE_CXX_FLAGS}")
 
 # custom build types
