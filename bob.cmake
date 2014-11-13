@@ -1,3 +1,14 @@
+# Variable BOB_PROJECT_VERSION contains version from current Git repository.
+find_package(Git)
+if (GIT_FOUND)
+  execute_process(
+    COMMAND ${GIT_EXECUTABLE} describe
+    OUTPUT_VARIABLE BOB_PROJECT_VERSION
+    WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+endif()
+
 # Create new build type.
 macro(bob_add_build_type build_type base_build_type comment compiler_flags linker_flags)
   foreach (compiler_language "C" "CXX")
@@ -332,6 +343,7 @@ function(bob_add_target target)
       MODULE_NAME="${target_name}"
       MODULE_VERSION="${target_version}"
       MODULE_RELEASE="${target_release}"
+      PRODUCT_VERSION_STR="${BOB_PROJECT_VERSION}"
     )
 
     # Only include paths relative to PROJECT_SOURCE_DIR are included using -I
