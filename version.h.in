@@ -1,0 +1,6 @@
+#pragma once
+
+#define MODULE_NAME "${target_name}"
+#define MODULE_VERSION "${target_version}"
+#define MODULE_RELEASE "${target_release}"
+#define PRODUCT_VERSION_STR "${BOB_PROJECT_VERSION}"

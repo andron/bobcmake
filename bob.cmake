@@ -9,6 +9,8 @@ if (GIT_FOUND)
     )
 endif()
 
+set(BOB_VERSION_HEADER_TEMPLATE "${CMAKE_CURRENT_LIST_DIR}/version.h")
+
 # Create new build type.
 macro(bob_add_build_type build_type base_build_type comment compiler_flags linker_flags)
   foreach (compiler_language "C" "CXX")
@@ -341,13 +343,12 @@ function(bob_add_target target)
 
   if (sources)
     # Define macros.
-    set_property(TARGET ${target} PROPERTY COMPILE_DEFINITIONS
-      ${target_defines}
-      MODULE_NAME="${target_name}"
-      MODULE_VERSION="${target_version}"
-      MODULE_RELEASE="${target_release}"
-      PRODUCT_VERSION_STR="${BOB_PROJECT_VERSION}"
-    )
+    set_property(TARGET ${target} PROPERTY COMPILE_DEFINITIONS BOBCMAKE ${target_defines})
+
+    # Generate "version.h".
+    configure_file(
+      "${BOB_VERSION_HEADER_TEMPLATE}.in"
+      "${CMAKE_CURRENT_BINARY_DIR}/bobcmake/version.h")
 
     # Only include paths relative to PROJECT_SOURCE_DIR are included using -I
     # (otherwise -isystem is used silencing all compiler warnings in headers).
