@@ -117,18 +117,24 @@ function(bob_add_library_or_executable target target_version)
       # Create target for shared library.
       add_library(${target} SHARED ${ARGN} ${headers})
 
+      if (NOT target_version)
+        message(FATAL_ERROR "Version is not set for library ${target}.")
+      endif()
+
       # The plugins are now in tacsiextensions called libFoo. Need another check to see if it was a plugin.
       if (target MATCHES "_plugin$")
         install(TARGETS ${target} DESTINATION "share/tacsi/plugins")
       else()
         install(TARGETS ${target} DESTINATION "lib64")
+        set_property(TARGET ${target} PROPERTY VERSION ${target_version})
+        if (NOT EXISTS target_soversion)
+          set(target_soversion ${target_version})
+        endif()
+        string(REPLACE "." ";" version_list ${target_soversion})
+        list(GET version_list 0 version_major)
+        set_property(TARGET ${target} PROPERTY SOVERSION ${version_major})
       endif()
 
-      if (NOT target_version)
-        message(FATAL_ERROR "Version is not set for library ${target}.")
-      endif()
-
-      set_property(TARGET ${target} PROPERTY VERSION ${target_version})
       set_property(TARGET ${target} PROPERTY PREFIX "")
     else()
       # Create target for header-only library.
