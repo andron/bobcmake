@@ -1,3 +1,5 @@
+# -*- indent-tab-mode:nil; -*-
+
 # Variable BOB_PROJECT_VERSION contains version from current Git repository.
 find_package(Git)
 if (GIT_FOUND)
