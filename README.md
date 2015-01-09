@@ -49,6 +49,13 @@ Below is contents of `CMakeLists.txt` under some project subdirectory for buildi
       _SOURCES
         src/*.cpp
         src/*.hh
+        # Generate "version.hh" with version information.
+        include/version.hh.in
+        # The ".in" file can contain:
+        #
+        #   #pragma once
+        #   #define EXAMPLE_VERSION "${target_version} r${target_release}"
+        #
 
       # Link with "spatial" and "commonapp", either from current project or LD_LIBRARY_PATH.
       _LIBS

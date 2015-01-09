@@ -9,8 +9,6 @@ if (GIT_FOUND)
     )
 endif()
 
-set(BOB_VERSION_HEADER_TEMPLATE "${CMAKE_CURRENT_LIST_DIR}/version.h")
-
 # Create new build type.
 macro(bob_add_build_type build_type base_build_type comment compiler_flags linker_flags)
   foreach (compiler_language "C" "CXX")
@@ -157,6 +155,7 @@ function(bob_add_library_or_executable target target_version)
     # If other targets links this library, they should be able to access headers in "include/".
     target_include_directories(${target} INTERFACE
       "$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>"
+      "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/config/include>"
       "$<INSTALL_INTERFACE:include>"
     )
   else()
@@ -227,7 +226,7 @@ function(bob_add_target target)
   # mytarget_RELEASE - release number
   bob_get(target_release ${target}_RELEASE ${RELEASE})
   # mytarget_SOURCES - source files to compile
-  bob_get(target_sources ${target}_SOURCES)
+  bob_get(target_sources_all ${target}_SOURCES)
   # mytarget_INCLUDES - include paths
   bob_get(target_includes ${target}_INCLUDES)
   # mytarget_HEADERS - headers containing Q_OBJECT function without .cpp file in same directory
@@ -251,6 +250,20 @@ function(bob_add_target target)
   bob_get(target_uses ${target}_USES)
   # mytarget_PROTOBUF - protobuf source files
   bob_get(target_protobuf ${target}_PROTOBUF)
+
+  # Generate source files from "*.in" files
+  set(target_sources)
+  foreach (src ${target_sources_all})
+    if (src MATCHES "\\.in$")
+      file(RELATIVE_PATH src_out "${CMAKE_CURRENT_LIST_DIR}" "${src}")
+      string(REGEX REPLACE "\\.in$" "" src_out "${CMAKE_CURRENT_BINARY_DIR}/config/${src_out}")
+      message("Generating ${src_out}")
+      configure_file("${src}" "${src_out}")
+      list(APPEND target_sources "${src_out}")
+    else()
+      list(APPEND target_sources "${src}")
+    endif()
+  endforeach()
 
   # Header-only library can leave out sources otherwise build fails.
   if (NOT target_sources)
@@ -307,9 +320,11 @@ function(bob_add_target target)
 
   # Add "src" and "include" module subdirectories to include paths.
   foreach (subdir "include" "src")
-    if (EXISTS "${CMAKE_CURRENT_LIST_DIR}/${subdir}/")
-      list(INSERT target_includes 0 "${CMAKE_CURRENT_LIST_DIR}/${subdir}")
-    endif()
+    foreach (root "${CMAKE_CURRENT_LIST_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/config")
+      if (EXISTS "${root}/${subdir}/")
+        list(INSERT target_includes 0 "${root}/${subdir}")
+      endif()
+    endforeach()
   endforeach()
 
   # Compile protobuf files.
@@ -345,15 +360,10 @@ function(bob_add_target target)
     # Define macros.
     set_property(TARGET ${target} PROPERTY COMPILE_DEFINITIONS BOBCMAKE ${target_defines})
 
-    # Generate "version.h".
-    configure_file(
-      "${BOB_VERSION_HEADER_TEMPLATE}.in"
-      "${CMAKE_CURRENT_BINARY_DIR}/bobcmake/version.h")
-
     # Only include paths relative to PROJECT_SOURCE_DIR are included using -I
     # (otherwise -isystem is used silencing all compiler warnings in headers).
     foreach (include_path ${target_includes})
-      if (include_path MATCHES "^([^/]|${PROJECT_SOURCE_DIR})")
+      if (include_path MATCHES "^([^/]|${PROJECT_SOURCE_DIR}|${CMAKE_CURRENT_BINARY_DIR}/config)")
         target_include_directories(${target} BEFORE PRIVATE ${include_path})
       else()
         target_include_directories(${target} SYSTEM PRIVATE ${include_path})
@@ -371,9 +381,11 @@ function(bob_add_target target)
 
   # Install everything under "include" and "share" directories.
   foreach (subdir "include" "share")
-    if (EXISTS "${CMAKE_CURRENT_LIST_DIR}/${subdir}/")
-      install(DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/${subdir}/" DESTINATION "${subdir}")
-    endif()
+    foreach (root "${CMAKE_CURRENT_LIST_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/config")
+      if (EXISTS "${root}/${subdir}/")
+        install(DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/${subdir}/" DESTINATION "${subdir}")
+      endif()
+    endforeach()
   endforeach()
 endfunction(bob_add_target)
 
