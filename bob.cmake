@@ -132,7 +132,7 @@ function(bob_add_library_or_executable target target_version)
       # Create target for shared library.
       add_library(${target} SHARED ${ARGN} ${headers})
 
-      if (NOT target_version)
+      if (NOT target MATCHES "_plugin$" AND NOT target_version)
         message(FATAL_ERROR "Version is not set for library ${target}.")
       endif()
 
