@@ -174,6 +174,31 @@ function(bob_add_library_or_executable target target_version)
   endif()
 endfunction()
 
+# Adds include paths for target. Paths relative to PROJECT_SOURCE_DIR are
+# included using "-I<PATH>" (otherwise "-isystem<PATH>" is used to silences
+# compiler warnings in foreign headers).
+function(bob_add_include_paths target)
+    set(project_includes)
+    set(system_includes)
+
+    foreach (include_path ${ARGN})
+      if (include_path MATCHES "^([^/]|${PROJECT_SOURCE_DIR}|${CMAKE_CURRENT_BINARY_DIR}/config)")
+        list(APPEND project_includes ${include_path})
+      else()
+        list(APPEND system_includes ${include_path})
+      endif()
+    endforeach()
+
+    # Add project-local include paths before system or foreign ones.
+    foreach (include_path ${project_includes})
+      target_include_directories(${target} PRIVATE ${include_path})
+    endforeach()
+
+    foreach (include_path ${system_includes})
+      target_include_directories(${target} SYSTEM PRIVATE ${include_path})
+    endforeach()
+endfunction()
+
 # Find sources containing Q_OBJECT macro and run moc on them.
 macro(bob_add_mocced_sources target target_qt target_sources_var_name)
   foreach (source ${ARGN})
@@ -327,8 +352,8 @@ function(bob_add_target target)
   # Add "src" and "include" module subdirectories to include paths. Note that
   # directory names will be prepended to the current list directory variable,
   # meaning the last one will take precedence.
-  foreach (subdir "include" "src")
-    foreach (root "${CMAKE_CURRENT_LIST_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/config")
+  foreach (root "${CMAKE_CURRENT_LIST_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/config")
+    foreach (subdir "include" "src")
       if (EXISTS "${root}/${subdir}/")
         list(INSERT target_includes 0 "${root}/${subdir}")
       endif()
@@ -368,15 +393,8 @@ function(bob_add_target target)
     # Define macros.
     set_property(TARGET ${target} PROPERTY COMPILE_DEFINITIONS BOBCMAKE ${target_defines})
 
-    # Only include paths relative to PROJECT_SOURCE_DIR are included using -I
-    # (otherwise -isystem is used silencing all compiler warnings in headers).
-    foreach (include_path ${target_includes})
-      if (include_path MATCHES "^([^/]|${PROJECT_SOURCE_DIR}|${CMAKE_CURRENT_BINARY_DIR}/config)")
-        target_include_directories(${target} BEFORE PRIVATE ${include_path})
-      else()
-        target_include_directories(${target} SYSTEM PRIVATE ${include_path})
-      endif()
-    endforeach()
+    # Add include paths.
+    bob_add_include_paths(${target} ${target_includes})
 
     # Set compilation flags for target.
     foreach (compile_flag ${target_cxx_flags})
