@@ -223,29 +223,29 @@ endmacro()
 #
 #   bob_add(
 #   # ...
-#   _PROTOBUF proto/*.proto
+#   _SOURCES proto/*.proto
 #   _LIBS_AT PROTOBUF_HOME protobuf
 #   # ...
 #   )
 #
 # in build file of target.
-macro(bob_add_protobuf target_protobuf_outputs_var_name)
-  foreach (protobuf ${ARGN})
-    string(REGEX REPLACE "^.*/|\\.proto$" "" protobuf_output_basename ${protobuf})
-    set(protobuf_output ${CMAKE_CURRENT_BINARY_DIR}/proto/${protobuf_output_basename}.pb.cc)
+macro(bob_add_protobuf target_protobuf_outputs_var_name protobuf)
+  string(REGEX REPLACE "^.*/|\\.proto$" "" protobuf_output_basename ${protobuf})
+  set(protobuf_output ${CMAKE_CURRENT_BINARY_DIR}/proto/${protobuf_output_basename}.pb.cc)
 
-    add_custom_command(
-      OUTPUT ${protobuf_output}
-      COMMAND "protoc"
-        --cpp_out=${CMAKE_CURRENT_BINARY_DIR}
-        --proto_path=${CMAKE_CURRENT_LIST_DIR}
-        ${protobuf}
-      DEPENDS ${protobuf}
-      WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}
-    )
+  add_custom_command(
+    OUTPUT "${protobuf_output}"
+    COMMAND "protoc"
+      "--cpp_out=${CMAKE_CURRENT_BINARY_DIR}"
+      "--proto_path=${CMAKE_CURRENT_LIST_DIR}"
+      "${protobuf}"
+    MAIN_DEPENDENCY "${protobuf}"
+    WORKING_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}"
+    COMMENT "Generating ${protobuf_output_basename}.pb.cc"
+    VERBATIM
+  )
 
-    list(APPEND ${target_protobuf_outputs_var_name} ${protobuf_output})
-  endforeach()
+  list(APPEND ${target_protobuf_outputs_var_name} ${protobuf_output})
 endmacro()
 
 # Create new target to build.
@@ -279,18 +279,20 @@ function(bob_add_target target)
   bob_get(target_compile ${target}_COMPILE)
   # mytarget_USES - non-compile time module dependencies
   bob_get(target_uses ${target}_USES)
-  # mytarget_PROTOBUF - protobuf source files
-  bob_get(target_protobuf ${target}_PROTOBUF)
 
-  # Generate source files from "*.in" files
   set(target_sources)
   foreach (src ${target_sources_all})
     if (src MATCHES "\\.in$")
+      # Generate source files from "*.in" files
       file(RELATIVE_PATH src_out "${CMAKE_CURRENT_LIST_DIR}" "${src}")
       string(REGEX REPLACE "\\.in$" "" src_out "${CMAKE_CURRENT_BINARY_DIR}/config/${src_out}")
       message("Generating ${src_out}")
       configure_file("${src}" "${src_out}")
       list(APPEND target_sources "${src_out}")
+    elseif (src MATCHES "\\.proto$")
+      # Compile protobuf files.
+      bob_add_protobuf(target_sources ${src})
+      list(APPEND target_sources "${target_protobuf_output}")
     else()
       list(APPEND target_sources "${src}")
     endif()
@@ -360,15 +362,11 @@ function(bob_add_target target)
     endforeach()
   endforeach()
 
-  # Compile protobuf files.
-  bob_add_protobuf(target_protobuf_outputs ${target_protobuf})
-
   list(APPEND sources
     ${target_compile}
     ${target_sources}
     ${target_forms_headers}
     ${target_resources_rcc}
-    ${target_protobuf_outputs}
     )
 
   # Create executable, shared library or header-only library.
