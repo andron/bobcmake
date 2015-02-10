@@ -404,7 +404,7 @@ function(bob_add_target target)
   endif()
 
   # Install everything under "include" and "share" directories.
-  foreach (subdir "include" "share")
+  foreach (subdir "include" "share" "etc")
     foreach (root "${CMAKE_CURRENT_LIST_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/config")
       if (EXISTS "${root}/${subdir}/")
         install(DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/${subdir}/" DESTINATION "${subdir}")
