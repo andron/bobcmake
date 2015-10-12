@@ -4,4 +4,6 @@ project(TestBobCMake)
 
 include(../bob.cmake)
 
+enable_testing()
+
 bob_add_submodules()
